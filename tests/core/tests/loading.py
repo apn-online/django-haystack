@@ -4,7 +4,15 @@ from haystack.exceptions import SearchFieldError, NotHandled
 from haystack import indexes
 from haystack.utils import loading
 from core.models import MockModel, AnotherMockModel
-import unittest
+
+try:
+    import unittest2 as unittest
+except ImportError:
+    import unittest
+    assert hasattr(unittest, 'skipIf'), (
+        'Your version of unittest does not support "skipIf". '
+        'You can install unittest2 or upgrade Python to 2.7'
+    )
 
 try:
     import pysolr

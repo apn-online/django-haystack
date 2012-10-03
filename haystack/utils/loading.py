@@ -1,5 +1,6 @@
 import copy
 import inspect
+import threading
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.datastructures import SortedDict
@@ -148,6 +149,7 @@ class UnifiedIndex(object):
     def __init__(self, excluded_indexes=None):
         self.indexes = {}
         self.fields = SortedDict()
+        self._build_lock = threading.RLock()
         self._built = False
         self._indexes_setup = False
         self.excluded_indexes = excluded_indexes or []
@@ -190,7 +192,24 @@ class UnifiedIndex(object):
         self._fieldnames = {}
         self._facet_fieldnames = {}
 
-    def build(self, indexes=None):
+    def build(self, *args, **kwargs):
+        acquired_easily = self._build_lock.acquire(blocking=False)
+        if not acquired_easily:
+            self._build_lock.acquire(blocking=True)
+
+        try:
+            if not acquired_easily and self._built:
+                # A race condition has been avoided. No need to build again.
+                # This assumes that this method is called consistently at any
+                # point in time. Eg. web requests trigger calls to build()
+                # and tests trigger calls to build(indexes=blah) but they are
+                # never being called differently from different threads.
+                return
+            self._build(*args, **kwargs)
+        finally:
+            self._build_lock.release()
+
+    def _build(self, indexes=None):
         self.reset()
 
         if indexes is None:
