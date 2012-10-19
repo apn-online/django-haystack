@@ -235,7 +235,7 @@ class ElasticsearchSearchBackend(BaseSearchBackend):
                             fields='', highlight=False, facets=None,
                             date_facets=None, query_facets=None,
                             narrow_queries=None, spelling_query=None,
-                            within=None, dwithin=None, distance_point=None,
+                            within=None, dwithin=None, dminimum=None, distance_point=None,
                             models=None, limit_to_registered_models=None,
                             result_class=None):
         index = haystack.connections[self.connection_alias].get_unified_index()
@@ -430,29 +430,45 @@ class ElasticsearchSearchBackend(BaseSearchBackend):
             else:
                 kwargs['query']['filtered']['filter'] = within_filter
 
-        if dwithin is not None:
-            lng, lat = dwithin['point'].get_coords()
-            dwithin_filter = {
-                "geo_distance": {
-                    "distance": dwithin['distance'].km,
-                    dwithin['field']: {
-                        "lat": lat,
-                        "lon": lng
+        if dwithin or dminimum:
+
+            query_filters = []
+
+            kwargs['query'].setdefault('filtered', {}).setdefault('filter', {})
+
+            if kwargs['query']['filtered']['filter']:
+                query_filters.append(kwargs['query']['filtered']['filter'])
+
+            for dfilter, operator in ((dwithin, True), (dminimum, False)):
+
+                if dfilter is None:
+                    continue
+
+                lng, lat = dfilter['point'].get_coords()
+                distance_filter = {
+                    "geo_distance": {
+                        "distance": dfilter['distance'].km,
+                        dfilter['field']: {
+                            "lat": lat,
+                            "lon": lng
+                        }
                     }
                 }
-            }
-            kwargs['query'].setdefault('filtered', {})
-            kwargs['query']['filtered'].setdefault('filter', {})
-            if kwargs['query']['filtered']['filter']:
+
+                if not operator:
+                    distance_filter = {
+                        "not": distance_filter
+                    }
+
+                query_filters.append(distance_filter)
+
+            if len(query_filters) > 1:
                 compound_filter = {
-                    "and": [
-                        kwargs['query']['filtered']['filter'],
-                        dwithin_filter
-                    ]
+                    "and": query_filters
                 }
                 kwargs['query']['filtered']['filter'] = compound_filter
             else:
-                kwargs['query']['filtered']['filter'] = dwithin_filter
+                kwargs['query']['filtered']['filter'] = query_filters[0]
 
         # Remove the "filtered" key if we're not filtering. Otherwise,
         # Elasticsearch will blow up.
@@ -804,6 +820,9 @@ class ElasticsearchSearchQuery(BaseSearchQuery):
 
         if self.dwithin:
             search_kwargs['dwithin'] = self.dwithin
+
+        if self.dminimum:
+            search_kwargs['dminimum'] = self.dminimum
 
         if self.end_offset is not None:
             search_kwargs['end_offset'] = self.end_offset

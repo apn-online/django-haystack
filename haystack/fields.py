@@ -174,7 +174,8 @@ class LocationField(SearchField):
         return "%s,%s" % (pnt_lat, pnt_lng)
 
     def convert(self, value):
-        from haystack.utils.geo import ensure_point, Point
+        from django.contrib.gis.geos import Point
+        from haystack.utils.geo import ensure_point
 
         if value is None:
             return None

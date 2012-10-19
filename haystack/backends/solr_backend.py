@@ -380,7 +380,7 @@ class SolrSearchBackend(BaseSearchBackend):
                     additional_fields['_point_of_origin'] = distance_point
 
                     if raw_result.get('__dist__'):
-                        from haystack.utils.geo import Distance
+                        from django.contrib.gis.measure import Distance
                         additional_fields['_distance'] = Distance(km=float(raw_result['__dist__']))
                     else:
                         additional_fields['_distance'] = None

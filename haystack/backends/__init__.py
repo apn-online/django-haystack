@@ -122,7 +122,7 @@ class BaseSearchBackend(object):
                             fields='', highlight=False, facets=None,
                             date_facets=None, query_facets=None,
                             narrow_queries=None, spelling_query=None,
-                            within=None, dwithin=None, distance_point=None,
+                            within=None, dwithin=None, dminimum=None, distance_point=None,
                             models=None, limit_to_registered_models=None,
                             result_class=None):
         # A convenience method most backends should include in order to make
@@ -303,6 +303,7 @@ class BaseSearchQuery(object):
         # Geospatial-related information
         self.within = {}
         self.dwithin = {}
+        self.dminimum = {}
         self.distance_point = {}
         # Internal.
         self._raw_query = None
@@ -376,6 +377,9 @@ class BaseSearchQuery(object):
 
         if self.dwithin:
             kwargs['dwithin'] = self.dwithin
+
+        if self.dminimum:
+            kwargs['dminimum'] = self.dminimum
 
         if self.distance_point:
             kwargs['distance_point'] = self.distance_point
@@ -715,6 +719,15 @@ class BaseSearchQuery(object):
             'distance': ensure_distance(distance),
         }
 
+    def add_dminimum(self, field, point, distance):
+        """Adds minimum radius-based parameters to search query."""
+        from haystack.utils.geo import ensure_point, ensure_distance
+        self.dminimum = {
+            'field': field,
+            'point': ensure_point(point),
+            'distance': ensure_distance(distance),
+        }
+
     def add_distance(self, field, point):
         """
         Denotes that results should include distance measurements from the
@@ -834,6 +847,7 @@ class BaseSearchQuery(object):
         clone.result_class = self.result_class
         clone.within = self.within.copy()
         clone.dwithin = self.dwithin.copy()
+        clone.dminimum = self.dminimum.copy()
         clone.distance_point = self.distance_point.copy()
         clone._raw_query = self._raw_query
         clone._raw_query_params = self._raw_query_params
