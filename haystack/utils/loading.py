@@ -192,22 +192,21 @@ class UnifiedIndex(object):
         self._fieldnames = {}
         self._facet_fieldnames = {}
 
-    def build(self, *args, **kwargs):
-        acquired_easily = self._build_lock.acquire(blocking=False)
-        if not acquired_easily:
-            self._build_lock.acquire(blocking=True)
+    def build(self, indexes=None):
+        """
+        Build/rebuild the index data. This class is not thread-safe when
+        indexes are passed into this method, because it will trigger reset()
+        and that clears a bunch of data that other threads might be using.
 
-        try:
-            if not acquired_easily and self._built:
-                # A race condition has been avoided. No need to build again.
-                # This assumes that this method is called consistently at any
-                # point in time. Eg. web requests trigger calls to build()
-                # and tests trigger calls to build(indexes=blah) but they are
-                # never being called differently from different threads.
-                return
-            self._build(*args, **kwargs)
-        finally:
-            self._build_lock.release()
+        Luckily, web requests never call this passing in indexes, so there
+        is no need to lock down access to every piece of data on this class.
+        Only tests and management commands are not thread-safe, and they don't
+        use threads.
+
+        """
+        with self._build_lock:
+            if not self._built or indexes is not None:
+                self._build(indexes=indexes)
 
     def _build(self, indexes=None):
         self.reset()

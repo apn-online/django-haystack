@@ -4,7 +4,7 @@ from distutils.core import setup
 
 setup(
     name='django-haystack',
-    version='2.0.0-beta-apn-online-0.2',
+    version='2.0.0-beta-apn-online-0.3',
     description='Pluggable search for Django.',
     author='Daniel Lindsley',
     author_email='daniel@toastdriven.com',
