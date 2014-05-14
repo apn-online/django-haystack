@@ -447,7 +447,7 @@ class ElasticsearchSearchBackend(BaseSearchBackend):
                 lng, lat = dfilter['point'].get_coords()
                 distance_filter = {
                     "geo_distance": {
-                        "distance": dfilter['distance'].km,
+                        "distance": str(dfilter['distance'].km) + 'km',
                         dfilter['field']: {
                             "lat": lat,
                             "lon": lng
