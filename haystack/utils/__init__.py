@@ -6,6 +6,7 @@ import importlib
 import re
 
 from django.conf import settings
+from django.db import connections
 from django.utils import six
 
 from haystack.constants import ID, DJANGO_CT, DJANGO_ID
@@ -27,8 +28,9 @@ def default_get_identifier(obj_or_string):
 
         return obj_or_string
 
-    return u"%s.%s" % (get_model_ct(obj_or_string),
-                       obj_or_string._get_pk_val())
+    identifier = u"%s.%s" % (get_model_ct(obj_or_string), obj_or_string._get_pk_val())
+    print('obj_or_string={0}; identifier={1}'.format(obj_or_string, identifier))
+    return identifier
 
 
 def _lookup_identifier_method():
@@ -64,10 +66,8 @@ get_identifier = _lookup_identifier_method()
 
 
 def get_model_ct_tuple(model):
-    # Deferred models should be identified as if they were the underlying model.
-    model_name = model._meta.concrete_model._meta.model_name \
-        if hasattr(model, '_deferred') and model._deferred else model._meta.model_name
-    return (model._meta.app_label, model_name)
+    return (model._meta.app_label, model._meta.module_name)
+
 
 def get_model_ct(model):
     return "%s.%s" % get_model_ct_tuple(model)
@@ -78,3 +78,14 @@ def get_facet_field_name(fieldname):
         return fieldname
 
     return "%s_exact" % fieldname
+
+
+def close_old_connections():
+    for connection in connections.all():
+        try:
+            # try and close connection
+            connection.close()
+        except:
+            # likely error 'connection already closed'
+            # fix for that is ....
+            connection.connection = None

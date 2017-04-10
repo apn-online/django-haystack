@@ -4,6 +4,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 from django.core.management.base import BaseCommand
 from django.utils import six
+from optparse import make_option
 
 from haystack import connections
 
@@ -11,20 +12,23 @@ from haystack import connections
 class Command(BaseCommand):
     help = "Clears out the search index completely."
 
-    def add_arguments(self, parser):
-        parser.add_argument(
+    base_options = (
+        make_option(
             '--noinput', action='store_false', dest='interactive', default=True,
             help='If provided, no prompts will be issued to the user and the data will be wiped out.'
-        )
-        parser.add_argument(
+        ),
+        make_option(
             "-u", "--using", action="append", default=[],
             help='Update only the named backend (can be used multiple times). '
                  'By default all backends will be updated.'
-        )
-        parser.add_argument(
+        ),
+        make_option(
             '--nocommit', action='store_false', dest='commit',
             default=True, help='Will pass commit=False to the backend.'
         )
+    )
+
+    option_list = BaseCommand.option_list + base_options
 
     def handle(self, **options):
         """Clears out the search index completely."""

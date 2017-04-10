@@ -419,6 +419,12 @@ class SearchQuerySet(object):
         clone.query.add_stats_query(field, stats_facets)
         return clone
 
+    def dminimum(self, field, point, distance):
+        """Spatial: Adds a minimum distance-based search to the query."""
+        clone = self._clone()
+        clone.query.add_dminimum(field, point, distance)
+        return clone
+
     def distance(self, field, point):
         """
         Spatial: Denotes results must have distance measurements from the

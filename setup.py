@@ -12,8 +12,11 @@ except ImportError:
     from setuptools import setup
 
 install_requires = [
-    'Django>=1.8',
-    'Django<1.11',
+    'Django>=1.4',
+    'Django<1.5',
+    # python 2.6 compatible
+    'odict==1.5.2',
+    'elasticsearch==2.4.1'
 ]
 
 tests_require = [

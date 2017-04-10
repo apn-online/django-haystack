@@ -74,7 +74,7 @@ class Elasticsearch2SearchBackend(ElasticsearchSearchBackend):
                             fields='', highlight=False, facets=None,
                             date_facets=None, query_facets=None,
                             narrow_queries=None, spelling_query=None,
-                            within=None, dwithin=None, distance_point=None,
+                            within=None, dwithin=None, dminimum=None, distance_point=None,
                             models=None, limit_to_registered_models=None,
                             result_class=None):
         kwargs = super(Elasticsearch2SearchBackend, self).build_search_kwargs(query_string, sort_by,
@@ -82,6 +82,7 @@ class Elasticsearch2SearchBackend(ElasticsearchSearchBackend):
                                                                               fields, highlight,
                                                                               spelling_query=spelling_query,
                                                                               within=within, dwithin=dwithin,
+                                                                              dminimum=None,
                                                                               distance_point=distance_point,
                                                                               models=models,
                                                                               limit_to_registered_models=

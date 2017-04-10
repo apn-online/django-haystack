@@ -6,16 +6,19 @@ import multiprocessing
 import os
 import time
 from datetime import timedelta
+from optparse import make_option
 
-from django.core.management.base import BaseCommand
-from django.db import close_old_connections, reset_queries
+from django.core.management.base import BaseCommand, LabelCommand
+from django.db import reset_queries
 from django.utils.encoding import force_text, smart_bytes
 from django.utils.timezone import now
 
 from haystack import connections as haystack_connections
 from haystack.exceptions import NotHandled
 from haystack.query import SearchQuerySet
+from haystack.utils import close_old_connections
 from haystack.utils.app_loading import haystack_get_models, haystack_load_apps
+
 
 DEFAULT_BATCH_SIZE = None
 DEFAULT_AGE = None
@@ -121,49 +124,53 @@ def do_update(backend, index, qs, start, end, total, verbosity=1, commit=True,
 class Command(BaseCommand):
     help = "Freshens the index for the given app(s)."
 
-    def add_arguments(self, parser):
-        parser.add_argument(
-            'app_label', nargs='*',
+    base_options = (
+        make_option(
+            '-l', '--app-label', dest='app_label',
             help='App label of an application to update the search index.'
-        )
-        parser.add_argument(
+        ),
+        make_option(
             '-a', '--age', type=int, default=DEFAULT_AGE,
             help='Number of hours back to consider objects new.'
-        )
-        parser.add_argument(
+        ),
+        make_option(
             '-s', '--start', dest='start_date',
             help='The start date for indexing within. Can be any dateutil-parsable string, recommended to be YYYY-MM-DDTHH:MM:SS.'
-        )
-        parser.add_argument(
+        ),
+        make_option(
             '-e', '--end', dest='end_date',
             help='The end date for indexing within. Can be any dateutil-parsable string, recommended to be YYYY-MM-DDTHH:MM:SS.'
-        )
-        parser.add_argument(
+        ),
+        make_option(
             '-b', '--batch-size', dest='batchsize', type=int,
             help='Number of items to index at once.'
-        )
-        parser.add_argument(
+        ),
+        make_option(
             '-r', '--remove', action='store_true', default=False,
             help='Remove objects from the index that are no longer present in the database.'
-        )
-        parser.add_argument(
+        ),
+        make_option(
             '-u', '--using', action='append', default=[],
             help='Update only the named backend (can be used multiple times). '
                  'By default all backends will be updated.'
-        )
-        parser.add_argument(
+        ),
+        make_option(
             '-k', '--workers', type=int, default=0,
             help='Allows for the use multiple workers to parallelize indexing.'
-        )
-        parser.add_argument(
+        ),
+        make_option(
             '--nocommit', action='store_false', dest='commit',
             default=True, help='Will pass commit=False to the backend.'
-        )
-        parser.add_argument(
+        ),
+        make_option(
             '-t', '--max-retries', action='store', dest='max_retries',
             type=int, default=DEFAULT_MAX_RETRIES,
             help='Maximum number of attempts to write to the backend when an error occurs.'
-        )
+        ),
+    )
+
+    option_list = BaseCommand.option_list + base_options
+
 
     def handle(self, **options):
         self.verbosity = int(options.get('verbosity', 1))
@@ -207,7 +214,11 @@ class Command(BaseCommand):
             except ValueError:
                 pass
 
-        labels = options.get('app_label') or haystack_load_apps()
+        if options.get('app_label'):
+            labels = [options.get('app_label')]
+        else:
+            labels = haystack_load_apps()
+
         for label in labels:
             for using in self.backends:
                 try:

@@ -2,7 +2,14 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import unittest
+try:
+    import unittest2 as unittest
+except ImportError:
+    import unittest
+    assert hasattr(unittest, 'skipIf'), (
+        'Your version of unittest does not support "skipIf". '
+        'You can install unittest2 or upgrade Python to 2.7'
+    )
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured

@@ -255,7 +255,7 @@ class ElasticsearchSearchBackend(BaseSearchBackend):
                             fields='', highlight=False, facets=None,
                             date_facets=None, query_facets=None,
                             narrow_queries=None, spelling_query=None,
-                            within=None, dwithin=None, distance_point=None,
+                            within=None, dwithin=None, dminimum=None, distance_point=None,
                             models=None, limit_to_registered_models=None,
                             result_class=None, **extra_kwargs):
         index = haystack.connections[self.connection_alias].get_unified_index()
@@ -454,29 +454,56 @@ class ElasticsearchSearchBackend(BaseSearchBackend):
             }
             filters.append(within_filter)
 
-        if dwithin is not None:
-            lng, lat = dwithin['point'].get_coords()
+        if dwithin or dminimum:
 
-            # NB: the 1.0.0 release of elasticsearch introduce an
-            #     incompatible change on the distance filter formating
-            if elasticsearch.VERSION >= (1, 0, 0):
-                distance = "%(dist).6f%(unit)s" % {
-                        'dist': dwithin['distance'].km,
-                        'unit': "km"
-                    }
-            else:
-                distance = dwithin['distance'].km
+            query_filters = []
 
-            dwithin_filter = {
-                "geo_distance": {
-                    "distance": distance,
-                    dwithin['field']: {
-                        "lat": lat,
-                        "lon": lng
+            kwargs['query'].setdefault('filtered', {}).setdefault('filter', {})
+
+            if kwargs['query']['filtered']['filter']:
+                query_filters.append(kwargs['query']['filtered']['filter'])
+
+            for dfilter, operator in ((dwithin, True), (dminimum, False)):
+
+                if dfilter is None:
+                    continue
+
+                lng, lat = dfilter['point'].get_coords()
+
+                # NB: the 1.0.0 release of elasticsearch introduce an
+                #     incompatible change on the distance filter formating
+                if elasticsearch.VERSION >= (1, 0, 0):
+                    distance = "%(dist).6f%(unit)s" % {
+                            'dist': float(dwithin['distance'].km),
+                            'unit': "km"
+                        }
+                else:
+                    distance = dwithin['distance'].km
+
+                distance_filter = {
+                    "geo_distance": {
+                        "distance": distance,
+                        dfilter['field']: {
+                            "lat": lat,
+                            "lon": lng
+                        }
                     }
                 }
-            }
-            filters.append(dwithin_filter)
+
+                if not operator:
+                    distance_filter = {
+                        "not": distance_filter
+                    }
+
+                query_filters.append(distance_filter)
+
+            if len(query_filters) > 1:
+                compound_filter = {
+                    "and": query_filters
+                }
+                filters.append(compound_filter)
+            else:
+                filters.append(query_filters[0])
 
         # if we want to filter, change the query type to filteres
         if filters:
@@ -908,6 +935,9 @@ class ElasticsearchSearchQuery(BaseSearchQuery):
 
         if self.dwithin:
             search_kwargs['dwithin'] = self.dwithin
+
+        if self.dminimum:
+            search_kwargs['dminimum'] = self.dminimum
 
         if self.end_offset is not None:
             search_kwargs['end_offset'] = self.end_offset

@@ -123,7 +123,7 @@ class SearchField(object):
                     current_object = None
                 else:
                     raise SearchFieldError(
-                        "The model '%s' combined with model_attr '%s' returned None, but doesn't allow "
+                        "The model '%s' combined with model_attr '%as' returned None, but doesn't allow "
                         "a default or null value." % (repr(current_object), self.model_attr)
                     )
 
@@ -131,7 +131,6 @@ class SearchField(object):
                 values.append(current_object())
             else:
                 values.append(current_object)
-
         return values
 
     def split_model_attr_lookups(self):
@@ -227,7 +226,8 @@ class LocationField(SearchField):
         return "%s,%s" % (pnt_lat, pnt_lng)
 
     def convert(self, value):
-        from haystack.utils.geo import ensure_point, Point
+        from django.contrib.gis.geos import Point
+        from haystack.utils.geo import ensure_point
 
         if value is None:
             return None

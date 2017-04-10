@@ -6,7 +6,10 @@ import copy
 import inspect
 import threading
 import warnings
-from collections import OrderedDict
+try:
+    from collections import OrderedDict
+except ImportError:
+    from odict import odict as OrderedDict
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
@@ -172,6 +175,7 @@ class UnifiedIndex(object):
         self._indexes = {}
         self.fields = OrderedDict()
         self._built = False
+        self._build_lock = threading.RLock()
         self.excluded_indexes = excluded_indexes or []
         self.excluded_indexes_ids = {}
         self.document_field = getattr(settings, 'HAYSTACK_DOCUMENT_FIELD', 'text')
@@ -216,6 +220,11 @@ class UnifiedIndex(object):
         self._facet_fieldnames = {}
 
     def build(self, indexes=None):
+        with self._build_lock:
+            if not self._built or indexes is not None:
+                self._build(indexes=indexes)
+
+    def _build(self, indexes=None):
         self.reset()
 
         if indexes is None:

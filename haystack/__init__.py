@@ -6,7 +6,7 @@ from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from pkg_resources import DistributionNotFound, get_distribution
 
-from haystack import signals
+# from haystack import signals
 from haystack.constants import DEFAULT_ALIAS
 from haystack.utils import loading
 
