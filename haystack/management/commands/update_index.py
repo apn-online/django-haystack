@@ -172,7 +172,7 @@ class Command(BaseCommand):
     option_list = BaseCommand.option_list + base_options
 
 
-    def handle(self, **options):
+    def handle(self, *args, **options):
         self.verbosity = int(options.get('verbosity', 1))
         self.batchsize = options.get('batchsize', DEFAULT_BATCH_SIZE)
         self.start_date = None
@@ -216,6 +216,8 @@ class Command(BaseCommand):
 
         if options.get('app_label'):
             labels = [options.get('app_label')]
+        elif len(args) > 0:
+            labels = args
         else:
             labels = haystack_load_apps()
 
