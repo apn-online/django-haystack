@@ -5,6 +5,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 from django.core.exceptions import ObjectDoesNotExist
+from django.db import models
 from django.utils import six
 from django.utils.encoding import force_text
 from django.utils.text import capfirst
@@ -231,6 +232,14 @@ class SearchResult(object):
         self.log = self._get_log()
 
 
+def load_indexes(sender, *args, **kwargs):
+    from haystack import connections
+
+    for conn in connections.all():
+        ui = conn.get_unified_index()
+        ui.setup_indexes()
+
+
 def reload_indexes(sender, *args, **kwargs):
     from haystack import connections
 
@@ -239,3 +248,7 @@ def reload_indexes(sender, *args, **kwargs):
         # Note: Unlike above, we're resetting the ``UnifiedIndex`` here.
         # Thi gives us a clean slate.
         ui.reset()
+        ui.setup_indexes()
+
+models.signals.pre_save.connect(load_indexes, dispatch_uid='setup_index_signals')
+models.signals.pre_delete.connect(load_indexes, dispatch_uid='setup_index_signals')
