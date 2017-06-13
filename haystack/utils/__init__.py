@@ -29,7 +29,7 @@ def default_get_identifier(obj_or_string):
         return obj_or_string
 
     identifier = u"%s.%s" % (get_model_ct(obj_or_string), obj_or_string._get_pk_val())
-    print('obj_or_string={0}; identifier={1}'.format(obj_or_string, identifier))
+    # print(u'obj_or_string={0}; identifier={1}'.format(obj_or_string, identifier))
     return identifier
 
 
