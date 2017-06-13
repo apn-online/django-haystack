@@ -113,6 +113,22 @@ class SearchIndex(with_metaclass(DeclarativeMetaclass, threading.local)):
         if not len(content_fields) == 1:
             raise SearchFieldError("The index '%s' must have one (and only one) SearchField with document=True." % self.__class__.__name__)
 
+    def _setup_save(self):
+        """A hook for controlling what happens when the registered model is saved."""
+        pass
+
+    def _setup_delete(self):
+        """A hook for controlling what happens when the registered model is deleted."""
+        pass
+
+    def _teardown_save(self):
+        """A hook for removing the behavior when the registered model is saved."""
+        pass
+
+    def _teardown_delete(self):
+        """A hook for removing the behavior when the registered model is deleted."""
+        pass
+
     def get_model(self):
         """
         Should return the ``Model`` class (not an instance) that the rest of the

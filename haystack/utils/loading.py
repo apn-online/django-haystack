@@ -175,6 +175,7 @@ class UnifiedIndex(object):
         self._indexes = {}
         self.fields = OrderedDict()
         self._built = False
+        self._indexes_setup = False
         self._build_lock = threading.RLock()
         self.excluded_indexes = excluded_indexes or []
         self.excluded_indexes_ids = {}
@@ -308,6 +309,29 @@ class UnifiedIndex(object):
             self.build()
 
         return self._indexes
+
+    def setup_indexes(self):
+        # if not self._built:
+        #     self.build()
+
+        if self._indexes_setup:
+            return
+
+        for model_ct, index in self.get_indexes().items():
+            index._setup_save()
+            index._setup_delete()
+
+        self._indexes_setup = True
+
+    def teardown_indexes(self):
+        if not self._built:
+            self.build()
+
+        for model_ct, index in self.get_indexes().items():
+            index._teardown_save()
+            index._teardown_delete()
+
+        self._indexes_setup = False
 
     def get_indexed_models(self):
         # Ensuring a list here since Python3 will give us an iterator
