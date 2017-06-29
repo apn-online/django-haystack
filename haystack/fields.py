@@ -123,7 +123,7 @@ class SearchField(object):
                     current_object = None
                 else:
                     raise SearchFieldError(
-                        "The model '%s' combined with model_attr '%as' returned None, but doesn't allow "
+                        "The model '%s' combined with model_attr '%s' returned None, but doesn't allow "
                         "a default or null value." % (repr(current_object), self.model_attr)
                     )
 
