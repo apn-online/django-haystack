@@ -32,7 +32,7 @@ tests_require = [
 
 setup(
     name='django-haystack',
-    version='2.6.1.dev2.news',
+    version='2.6.2.dev2.news',
     description='Pluggable search for Django.',
     author='Daniel Lindsley',
     author_email='daniel@toastdriven.com',
