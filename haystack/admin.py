@@ -69,6 +69,7 @@ class SearchChangeList(ChangeList):
 class SearchModelAdminMixin(object):
     # haystack connection to use for searching
     haystack_connection = 'default'
+    changlist_class = SearchChangeList
 
     @csrf_protect_m
     def changelist_view(self, request, extra_context=None):
@@ -109,7 +110,7 @@ class SearchModelAdminMixin(object):
         if hasattr(self, 'list_max_show_all'):
             kwargs['list_max_show_all'] = self.list_max_show_all
 
-        changelist = SearchChangeList(**kwargs)
+        changelist = self.changlist_class(**kwargs)
         formset = changelist.formset = None
         media = self.media
 
@@ -155,4 +156,37 @@ class SearchModelAdminMixin(object):
 
 
 class SearchModelAdmin(SearchModelAdminMixin, ModelAdmin):
+    pass
+
+
+class FilterSearchChangeList(ChangeList):
+    def __init__(self, **kwargs):
+        self.haystack_connection = kwargs.pop('haystack_connection', 'default')
+        super(FilterSearchChangeList, self).__init__(**kwargs)
+
+    def get_query_set(self, request):
+        # search_fields is replaced by ES search
+        search_fields = self.search_fields
+        self.search_fields = None
+
+        query_set = super(FilterSearchChangeList, self).get_query_set(request)
+
+        # bring it back so that the search box will appear
+        self.search_fields = search_fields
+
+        if SEARCH_VAR in request.GET:
+            sqs = SearchQuerySet(self.haystack_connection).models(self.model).auto_query(
+                request.GET[SEARCH_VAR]).load_all()
+            query_set = query_set.filter(id__in=[item.pk for item in sqs])
+        return query_set
+
+
+class FilterSearchModelAdminMixin(SearchModelAdminMixin):
+    """
+        This's a hybrid solution to use both ES Search and DB Filter at the same time.
+    """
+    changlist_class = FilterSearchChangeList
+
+
+class FilterSearchModelAdmin(FilterSearchModelAdminMixin, ModelAdmin):
     pass
